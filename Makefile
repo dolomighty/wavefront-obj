@@ -26,7 +26,7 @@ all : main
 
 .PHONY : run
 run : main
-	./$^ ../cornell.obj
+	./$^ cornell.obj
 
 
 
