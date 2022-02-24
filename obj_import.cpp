@@ -9,11 +9,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#undef NDEBUG
 #include <assert.h>
+
 #include <vector>
 #include <string>
 #include <iostream>
-#include <iomanip>
 #include <unordered_map>
 
 
@@ -21,7 +23,7 @@
 
 
 // non voglio esportare strutture
-// quindi uso solo 
+// quindi uso solo float arrays
 
 // HEADERBEG
 #define TRI_CB_DEF(NAME) void NAME( float a[], float b[], float c[], float d[], float e[] )
@@ -30,22 +32,34 @@
 
 
 
-union FLAT3 {
-    float flat[3];
-    struct { float r,g,b; } rgb;
-    struct { float x,y,z; } xyz;
+struct V3f {
+    float v[3];
+    // get
+    auto x(){ return v[0]; }
+    auto y(){ return v[1]; }
+    auto z(){ return v[2]; }
+    auto r(){ return v[0]; }
+    auto g(){ return v[1]; }
+    auto b(){ return v[2]; }
+    // set
+    auto x( float x ){ return v[0]=x; }
+    auto y( float x ){ return v[1]=x; }
+    auto z( float x ){ return v[2]=x; }
+    auto r( float x ){ return v[0]=x; }
+    auto g( float x ){ return v[1]=x; }
+    auto b( float x ){ return v[2]=x; }
 };
 
 
 struct MTL {
-    union FLAT3 diff;
-    union FLAT3 emit;
+    struct V3f diff;
+    struct V3f emit;
 };
 
 std::unordered_map<std::string,struct MTL> mtl_list;
 // le liste di vertici/uv/ecc sono globali nel file
 // inoltre son 1-based, gestito
-std::vector<union FLAT3> vert_list;
+std::vector<struct V3f> vert_list;
 
 TRI_CB_DEF((*global_tri_cb));
 
@@ -87,11 +101,11 @@ static void out_raw_tri( struct MTL &mtl ){
         assert( 3 == sscanf( t, "%d/%d/%d", &vun[i].v, &vun[i].u, &vun[i].n ));
         if(i<2){ ++i; continue; }
         global_tri_cb(
-            vert_list[vun[0].v].flat,
-            vert_list[vun[1].v].flat,
-            vert_list[vun[2].v].flat,
-            mtl.diff.flat,
-            mtl.emit.flat
+            vert_list[vun[0].v].v,
+            vert_list[vun[1].v].v,
+            vert_list[vun[2].v].v,
+            mtl.diff.v,
+            mtl.emit.v
         );
         vun[1] = vun[2];
     }
@@ -118,13 +132,14 @@ static void parse( FILE *f ){
 
         // brucio i commenti
         char *c = strchr(line,'#');
-        if(c)*c=0;  // termino la stringa
+        if(c)*c=0;  // termino la stringa sul #
 
         // parse
         c = tok(line);
         if(!c)continue;
 
         std::string item = c;
+//        std::cout << item << std::endl;
 
         if( item == "newmtl" ){
             if(store_mtl) mtl_list[mtl_name]=mtl;
@@ -148,16 +163,16 @@ static void parse( FILE *f ){
         }
 
         if( item == "Kd" ){
-            mtl.diff.rgb.r = atof(tok());
-            mtl.diff.rgb.g = atof(tok());
-            mtl.diff.rgb.b = atof(tok());
+            mtl.diff.r(atof(tok()));
+            mtl.diff.g(atof(tok()));
+            mtl.diff.b(atof(tok()));
             continue;
         }
 
         if( item == "Ke" ){
-            mtl.emit.rgb.r = atof(tok());
-            mtl.emit.rgb.g = atof(tok());
-            mtl.emit.rgb.b = atof(tok());
+            mtl.emit.r(atof(tok()));
+            mtl.emit.g(atof(tok()));
+            mtl.emit.b(atof(tok()));
             continue;
         }
 
@@ -175,10 +190,10 @@ static void parse( FILE *f ){
         }
 
         if( item == "v" ){
-            union FLAT3 xyz;
-            xyz.xyz.x = atof(tok());
-            xyz.xyz.y = atof(tok());
-            xyz.xyz.z = atof(tok());
+            struct V3f xyz;
+            xyz.x(atof(tok()));
+            xyz.y(atof(tok()));
+            xyz.z(atof(tok()));
             vert_list.push_back(xyz);
             continue;
         }
@@ -215,7 +230,7 @@ void obj_import( char *path, TRI_CB_DEF((*tri_cb))){    // HEADER
 
     // nel .obj gli indici son tutti 1-based, quindi aggiungo un dummy
     // per evitare di fare brutta aritmetica dopo
-    union FLAT3 dummy;
+    struct V3f dummy;
     vert_list.push_back(dummy);
 
     parse(f);

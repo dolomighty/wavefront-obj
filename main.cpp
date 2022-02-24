@@ -1,7 +1,7 @@
 
 
 #include <assert.h>
-#include <obj_import.h>
+#include "dyn/obj_import.h"
 #include <iostream>
 
 
@@ -23,5 +23,4 @@ int main( int argc , char *argv[] ){
     obj_import( argv[1], tri_cb );
     return 0;
 }
-
 
