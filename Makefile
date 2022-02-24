@@ -30,7 +30,7 @@ run : main
 
 
 
-
+OBS+=obj_import.o
 OBS+=main.o
 
 
